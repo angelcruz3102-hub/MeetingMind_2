@@ -2,25 +2,40 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover" />
   <title>MeetingMind AI</title>
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #0d0f14;
-      --surface:   #161a22;
-      --border:    #252b38;
-      --accent:    #6c63ff;
-      --accent-h:  #8b85ff;
-      --gold:      #f5a623;
-      --text:      #e8eaf0;
-      --muted:     #7a849a;
-      --error:     #ff5c5c;
-      --success:   #4caf50;
-      --radius:    12px;
-      --font:      'Segoe UI', system-ui, sans-serif;
+      --accent: #FF6B2C;
+      --accent-h: #FF8655;
+      --gold: #f5a623;
+      --error: #ff5c5c;
+      --success: #4caf50;
+      --radius: 12px;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #FFFFFF;
+        --surface: #F5F5F5;
+        --border: #E0E0E0;
+        --text: #1A1A1A;
+        --muted: #666666;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d0f14;
+        --surface: #161a22;
+        --border: #252b38;
+        --text: #e8eaf0;
+        --muted: #7a849a;
+      }
     }
 
     body {
@@ -32,6 +47,7 @@
       flex-direction: column;
       align-items: center;
       padding: 24px 16px 48px;
+      transition: background 0.2s, color 0.2s;
     }
 
     /* ── Header ── */
@@ -94,7 +110,7 @@
     }
     #config-panel.open { display: block; }
     #config-panel label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 6px; font-weight: 600; }
-    #config-panel input, #config-panel select, #config-panel textarea {
+    #config-panel select {
       width: 100%;
       background: var(--bg);
       border: 1px solid var(--border);
@@ -105,8 +121,7 @@
       outline: none;
       font-family: var(--font);
     }
-    #config-panel input:focus, #config-panel select:focus, #config-panel textarea:focus { border-color: var(--accent); }
-    #groq-key-status, #template-hint { font-size: 0.78rem; margin-top: 8px; color: var(--muted); }
+    #config-panel select:focus { border-color: var(--accent); }
 
     .key-divider {
       border-top: 1px solid var(--border);
@@ -114,28 +129,51 @@
       padding-top: 16px;
     }
 
-    .btn-save {
-      margin-top: 12px;
+    /* ── Mode Selector (Pre‑generation) ── */
+    #mode-selector {
+      width: 100%;
+      max-width: 760px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .mode-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .mode-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .mode-chip {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 40px;
+      padding: 12px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mode-chip:has(input:checked) {
+      border-color: var(--accent);
       background: var(--accent);
       color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 9px 20px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
+      box-shadow: 0 4px 15px rgba(255, 107, 44, 0.35);
     }
-    .btn-save:hover { background: var(--accent-h); }
-
-    #custom-template-input {
-      display: none;
-      margin-top: 10px;
-      min-height: 90px;
-      resize: vertical;
-      line-height: 1.5;
-    }
-    #custom-template-input.visible { display: block; }
+    .mode-chip input[type="radio"] { display: none; }
 
     /* ── Main Card ── */
     .card {
@@ -197,10 +235,10 @@
       justify-content: center;
       padding: 16px;
       font-size: 1.05rem;
-      background: linear-gradient(135deg, var(--accent), #9b51e0);
-      box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+      background: linear-gradient(135deg, var(--accent), #E0551F);
+      box-shadow: 0 4px 15px rgba(255, 107, 44, 0.3);
     }
-    #btn-analyze:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4); }
+    #btn-analyze:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(255, 107, 44, 0.4); }
 
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(255,92,92,0.5); }
@@ -261,10 +299,12 @@
     }
     .select-inline:focus { border-color: var(--accent); }
 
+    /* Secciones dinámicas */
     .note-section { margin-bottom: 24px; }
     .note-section h3 {
-      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em;
+      font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em;
       text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+      border-left: 4px solid var(--accent); padding-left: 12px;
     }
 
     .note-content {
@@ -273,29 +313,19 @@
       white-space: pre-wrap;
     }
 
-    /* ── Bloques de Tema ── */
-    .tema-block { margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-    .tema-block:last-child { margin-bottom: 0; border-bottom: none; }
-    .tema-block h4 { color: var(--text); font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; margin-top: 0; }
-    .tema-block .resumen { color: var(--muted); font-size: 0.85rem; margin-bottom: 10px; }
-    
-    details summary { 
-      color: var(--accent); cursor: pointer; font-size: 0.85rem; font-weight: 600; outline: none; user-select: none; 
+    .section-list {
+      list-style: disc; margin-left: 22px; color: var(--text); line-height: 1.7; font-size: 0.9rem;
     }
-    .tema-puntos {
-      list-style: disc; margin-left: 22px; color: var(--muted);
-      line-height: 1.6; font-size: 0.88rem; margin-top: 8px; padding-left: 0;
-    }
-    .tema-puntos li { margin-bottom: 6px; }
+    .section-list li { margin-bottom: 8px; }
 
-    /* ── Tareas Pendientes ── */
-    .tareas-container {
-      background: rgba(76, 175, 80, 0.05); border: 1px solid var(--success);
-      border-radius: 8px; padding: 16px; margin-top: 24px;
+    .section-paragraphs p { margin-bottom: 12px; }
+    .section-paragraphs p:last-child { margin-bottom: 0; }
+
+    .section-block {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px; font-family: 'Courier New', monospace; font-size: 0.88rem;
+      white-space: pre-wrap; overflow-x: auto;
     }
-    .tareas-container h3 { color: var(--success); margin-bottom: 12px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .tarea-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 0.9rem; color: var(--text); }
-    .tarea-item input[type="checkbox"] { margin-top: 4px; accent-color: var(--success); cursor: pointer; }
 
     /* ── Proyectos ── */
     .proyectos-create-row {
@@ -334,7 +364,7 @@
       padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; cursor: pointer;
     }
     .btn-back:hover { border-color: var(--accent); }
-    .proyecto-detail-header h2 { font-size: 1.1rem; color: #fff; flex: 1; word-break: break-word; }
+    .proyecto-detail-header h2 { font-size: 1.1rem; flex: 1; word-break: break-word; }
     .btn-delete-proyecto {
       background: transparent; border: 1px solid var(--error); color: var(--error);
       padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer;
@@ -344,10 +374,10 @@
     .btn-global-summary {
       width: 100%; justify-content: center; display: flex; align-items: center; gap: 8px;
       padding: 15px; font-size: 1rem; font-weight: 700; border: none; border-radius: 10px;
-      background: linear-gradient(135deg, var(--gold), #ff8a3d); color: #1a1200; cursor: pointer;
-      margin-bottom: 20px; box-shadow: 0 4px 15px rgba(245,166,35,0.25);
+      background: linear-gradient(135deg, var(--accent), #E0551F); color: #fff; cursor: pointer;
+      margin-bottom: 20px; box-shadow: 0 4px 15px rgba(255, 107, 44, 0.25);
     }
-    .btn-global-summary:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(245,166,35,0.35); }
+    .btn-global-summary:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(255, 107, 44, 0.35); }
     .btn-global-summary:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .nota-guardada {
@@ -368,7 +398,7 @@
       background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
       max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 22px;
     }
-    .modal-box h3 { color: var(--gold); font-size: 1rem; margin-bottom: 14px; display:flex; align-items:center; gap:8px; }
+    .modal-box h3 { color: var(--accent); font-size: 1rem; margin-bottom: 14px; display:flex; align-items:center; gap:8px; }
     .modal-box .modal-content { font-size: 0.9rem; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
     .btn-close-modal {
       margin-top: 18px; width: 100%; background: var(--surface); border: 1px solid var(--border);
@@ -387,7 +417,7 @@
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
-      background: #222733; border: 1px solid var(--border); color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
       padding: 12px 22px; border-radius: 10px; font-size: 0.88rem;
       transition: transform 0.3s ease; z-index: 999; white-space: nowrap;
     }
@@ -396,6 +426,7 @@
     @media (max-width: 520px) {
       .btn { padding: 11px 18px; font-size: 0.88rem; }
       #toast { white-space: normal; max-width: 90vw; text-align: center; }
+      .mode-chip { padding: 10px 16px; font-size: 0.82rem; }
     }
   </style>
 </head>
@@ -410,36 +441,13 @@
   <button id="btn-config">⚙️ Configuración</button>
 </header>
 
+<!-- Panel de configuración simplificado -->
 <div id="config-panel">
-  <label for="groq-key-input">Groq — API Key (Motor Principal: Audio y Análisis)</label>
-  <input type="password" id="groq-key-input" placeholder="gsk_..." autocomplete="off" />
-  <button id="btn-save-groq-key" class="btn-save">Guardar clave Groq</button>
-  <div id="groq-key-status">La clave se guarda solo en tu dispositivo.</div>
-
-  <div class="key-divider">
-    <label for="nvidia-key-input">NVIDIA NIM — API Key (Respaldo Automático Llama 3.1 70B)</label>
-    <input type="password" id="nvidia-key-input" placeholder="nvapi-..." autocomplete="off" />
-  </div>
-
-  <div class="key-divider">
-    <label for="model-select">Modelo de Inteligencia Artificial (Texto - Groq)</label>
-    <select id="model-select">
-      <option value="llama-3.3-70b-versatile">🧠 Llama 3.3 70B (Recomendado - Súper Inteligente)</option>
-      <option value="llama-3.1-8b-instant">⚡ Llama 3.1 8B (El más rápido)</option>
-    </select>
-  </div>
-
-  <div class="key-divider">
-    <label for="template-select">Formato de Apuntes</label>
-    <select id="template-select">
-      <option value="auto">✨ Auto (Predeterminado)</option>
-      <option value="trabajo">🏢 Reunión de Trabajo</option>
-      <option value="clase">📚 Clase Universitaria</option>
-      <option value="custom">✍️ Personalizado</option>
-    </select>
-    <textarea id="custom-template-input" placeholder="Escribe tus propias reglas (ej. 'Enfócate en fórmulas y cálculos')…"></textarea>
-    <div id="template-hint">Se aplica automáticamente en tu próximo análisis.</div>
-  </div>
+  <label for="model-select">Modelo de Inteligencia Artificial (Texto - Groq)</label>
+  <select id="model-select">
+    <option value="llama-3.3-70b-versatile">🧠 Llama 3.3 70B (Recomendado - Súper Inteligente)</option>
+    <option value="llama-3.1-8b-instant">⚡ Llama 3.1 8B (El más rápido)</option>
+  </select>
 
   <div class="key-divider">
     <label>Copia de Seguridad (Sincronizar con celular)</label>
@@ -448,6 +456,17 @@
       <button id="btn-import-data" class="btn-secondary" style="font-size: 0.8rem; padding: 8px 12px;">📥 Importar Datos</button>
       <input type="file" id="import-file" accept=".json" style="display:none" />
     </div>
+  </div>
+</div>
+
+<!-- Selector de modo pre‑generación -->
+<div id="mode-selector" style="display:none;">
+  <span class="mode-label">¿Qué tipo de estructura deseas?</span>
+  <div class="mode-chips" id="mode-chips-container">
+    <label class="mode-chip"><input type="radio" name="mode" value="academico"> 🎓 Académico</label>
+    <label class="mode-chip"><input type="radio" name="mode" value="ejecutivo"> 💼 Ejecutivo</label>
+    <label class="mode-chip"><input type="radio" name="mode" value="libre"> 📝 Registro Libre</label>
+    <label class="mode-chip"><input type="radio" name="mode" value="idiomas"> 🌐 Idiomas</label>
   </div>
 </div>
 
@@ -510,7 +529,18 @@
 </div>
 
 <script>
-// Reemplazo de memoria temporal para evitar colapsos en MIT App Inventor
+// ═══════════════════ API KEY HARDCODEADA (USO PERSONAL) ═══════════════════
+const GROQ_API_KEY = "TU_CLAVE_GROQ_AQUI"; // ← Reemplaza con tu clave real
+
+// ═══════════════════ CONSTANTES ═══════════════════
+const GROQ_AUDIO_MODEL = 'whisper-large-v3-turbo';
+const GROQ_AUDIO_URL   = 'https://api.groq.com/openai/v1/audio/transcriptions';
+const GROQ_CHAT_URL    = 'https://api.groq.com/openai/v1/chat/completions';
+const LS_KEY_MODEL     = 'meetingmind_groq_text_model';
+const LS_KEY_PROJECTS  = 'meetingmind_projects';
+const LS_KEY_MODE      = 'meetingmind_analysis_mode';
+
+// ═══════════════════ MEMORIA TEMPORAL ═══════════════════
 const memoriaTemporal = {
     datos: {},
     guardar: function(clave, valor) {
@@ -527,24 +557,14 @@ const memoriaTemporal = {
     }
 };
 
-const GROQ_AUDIO_MODEL = 'whisper-large-v3-turbo';
-const GROQ_AUDIO_URL   = 'https://api.groq.com/openai/v1/audio/transcriptions';
-const GROQ_CHAT_URL    = 'https://api.groq.com/openai/v1/chat/completions';
-const NVIDIA_CHAT_URL  = 'https://corsproxy.io/?' + encodeURIComponent('https://integrate.api.nvidia.com/v1/chat/completions');
-
-const LS_KEY_GROQ   = 'meetingmind_groq_api_key';
-const LS_KEY_NVIDIA = 'meetingmind_nvidia_api_key';
-const LS_KEY_TEMPLATE = 'meetingmind_template';
-const LS_KEY_TEMPLATE_CUSTOM = 'meetingmind_template_custom';
-const LS_KEY_MODEL = 'meetingmind_groq_text_model';
-const LS_KEY_PROJECTS = 'meetingmind_projects';
-
+// ═══════════════════ ESTADO GLOBAL ═══════════════════
 let recognition = null;
 let isRecording = false;
 let shouldRestart = false;
-let accumulatedTranscript = ''; 
-let currentParsedData = null; 
-let currentOpenProjectId = null; 
+let accumulatedTranscript = '';
+let currentParsedData = null;
+let currentOpenProjectId = null;
+let currentMode = 'academico'; // modo por defecto
 
 window.addEventListener('DOMContentLoaded', () => {
   try { initUI(); } catch (err) { alert('Error al inicializar la app: ' + err.message); }
@@ -553,11 +573,6 @@ window.addEventListener('DOMContentLoaded', () => {
 function initUI() {
   const btnConfig = document.getElementById('btn-config');
   const configPanel = document.getElementById('config-panel');
-  const groqKeyInput = document.getElementById('groq-key-input');
-  const nvidiaKeyInput = document.getElementById('nvidia-key-input');
-  const groqKeyStatus = document.getElementById('groq-key-status');
-  const templateSelect = document.getElementById('template-select');
-  const customTemplateInput = document.getElementById('custom-template-input');
   const modelSelect = document.getElementById('model-select');
   
   const btnMic = document.getElementById('btn-mic');
@@ -568,35 +583,23 @@ function initUI() {
   const tabs = document.querySelectorAll('.tab');
   const tabPanes = document.querySelectorAll('.tab-pane');
 
-  const savedGroqKey = memoriaTemporal.obtener(LS_KEY_GROQ) || '';
-  groqKeyInput.value = savedGroqKey;
-  updateGroqKeyStatus(savedGroqKey, groqKeyStatus);
-
-  nvidiaKeyInput.value = memoriaTemporal.obtener(LS_KEY_NVIDIA) || '';
-  nvidiaKeyInput.addEventListener('input', () => memoriaTemporal.guardar(LS_KEY_NVIDIA, nvidiaKeyInput.value.trim()));
-
+  // Cargar modelo
   modelSelect.value = memoriaTemporal.obtener(LS_KEY_MODEL) || 'llama-3.3-70b-versatile';
-  modelSelect.addEventListener('change', () => { memoriaTemporal.guardar(LS_KEY_MODEL, modelSelect.value); });
-
-  templateSelect.value = memoriaTemporal.obtener(LS_KEY_TEMPLATE) || 'auto';
-  customTemplateInput.value = memoriaTemporal.obtener(LS_KEY_TEMPLATE_CUSTOM) || '';
-  syncCustomTemplateVisibility(templateSelect, customTemplateInput);
-
-  templateSelect.addEventListener('change', () => {
-    memoriaTemporal.guardar(LS_KEY_TEMPLATE, templateSelect.value);
-    syncCustomTemplateVisibility(templateSelect, customTemplateInput);
+  modelSelect.addEventListener('change', () => {
+    memoriaTemporal.guardar(LS_KEY_MODEL, modelSelect.value);
   });
 
-  customTemplateInput.addEventListener('input', () => {
-    memoriaTemporal.guardar(LS_KEY_TEMPLATE_CUSTOM, customTemplateInput.value);
-  });
-
-  document.getElementById('btn-save-groq-key').addEventListener('click', () => {
-    const k = groqKeyInput.value.trim();
-    if (!k) { showToast('⚠️ Escribe una API Key de Groq.'); return; }
-    memoriaTemporal.guardar(LS_KEY_GROQ, k);
-    updateGroqKeyStatus(k, groqKeyStatus);
-    showToast('✅ API Key guardada.');
+  // Cargar modo estructural guardado
+  currentMode = memoriaTemporal.obtener(LS_KEY_MODE) || 'academico';
+  const savedModeRadio = document.querySelector(`input[name="mode"][value="${currentMode}"]`);
+  if (savedModeRadio) savedModeRadio.checked = true;
+  
+  // Listener cambio de modo en chips
+  document.querySelectorAll('input[name="mode"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      currentMode = radio.value;
+      memoriaTemporal.guardar(LS_KEY_MODE, currentMode);
+    });
   });
 
   btnConfig.addEventListener('click', () => configPanel.classList.toggle('open'));
@@ -614,6 +617,7 @@ function initUI() {
     });
   });
 
+  // Copiar transcripción
   const btnCopyTranscript = document.getElementById('btn-copy-transcript');
   if (btnCopyTranscript) {
     btnCopyTranscript.addEventListener('click', () => {
@@ -637,7 +641,7 @@ function initUI() {
 
   btnAnalyze.addEventListener('click', () => {
     if (!accumulatedTranscript.trim()) return;
-    analyzeText(accumulatedTranscript.trim(), document.getElementById('notes-container'));
+    analyzeText(accumulatedTranscript.trim(), document.getElementById('notes-container'), currentMode);
   });
 
   btnClear.addEventListener('click', () => {
@@ -674,7 +678,7 @@ function initUI() {
 
   renderProjectsTab();
 
-  // Lógica de Exportar Datos
+  // Exportar datos
   const btnExport = document.getElementById('btn-export-data');
   if (btnExport) {
     btnExport.addEventListener('click', () => {
@@ -690,7 +694,7 @@ function initUI() {
     });
   }
 
-  // Lógica de Importar Datos
+  // Importar datos
   const btnImport = document.getElementById('btn-import-data');
   const importFile = document.getElementById('import-file');
   if (btnImport && importFile) {
@@ -711,40 +715,81 @@ function initUI() {
         }
       };
       reader.readAsText(file);
-      e.target.value = ''; 
+      e.target.value = '';
     });
   }
 }
 
-function syncCustomTemplateVisibility(selectEl, textEl) {
-  if (selectEl.value === 'custom') { textEl.classList.add('visible'); } else { textEl.classList.remove('visible'); }
+// ═══════════════════ SISTEMA DE MODOS ═══════════════════
+function getSystemPromptForMode(mode) {
+  const base = `Actúas como un asistente experto en tomar apuntes estructurados a partir de transcripciones de audio. No inventes información que no esté en el texto. Devuelve exclusivamente un JSON válido, sin markdown ni texto adicional, con esta estructura exacta:\n{\n  "titulo_principal": "string",\n  "secciones": [\n    {\n      "titulo_seccion": "string",\n      "tipo_contenido": "lista" | "parrafos" | "bloque",\n      "contenido": ["string", "string"]\n    }\n  ]\n}\n\nReglas adicionales según el modo:`;
+
+  const prompts = {
+    academico: `${base}
+    
+    MODO ACADÉMICO / DESARROLLO PROFUNDO:
+    Debes generar las siguientes secciones (en este orden):
+    1. "Título y Núcleo" (parrafos): Presenta el título general y una síntesis del núcleo temático.
+    2. "Registro Cronológico" (lista): Sub-temas y explicaciones en orden lógico.
+    3. "Repositorio Técnico y Fórmulas" (bloque): Fórmulas, ecuaciones o datos técnicos relevantes (usa formato de bloque).
+    4. "Ejemplos Discutidos" (lista): Ejemplos concretos mencionados.
+    5. "Preguntas y Respuestas" (lista): Formato "P: ... R: ...".
+    6. "Guía de Repaso" (lista): 5 preguntas complejas de repaso que el estudiante debería poder responder.`,
+
+    ejecutivo: `${base}
+    
+    MODO EJECUTIVO / REGISTRO EXHAUSTIVO DE REUNIONES:
+    Debes generar las siguientes secciones (en este orden):
+    1. "Objetivo de la Sesión" (parrafos): Meta principal y propósito de la reunión.
+    2. "Bitácora Detallada de la Discusión" (lista): Cada punto discutido con nivel de detalle. Incluye quién dijo qué si se menciona.
+    3. "Datos y Métricas" (bloque): Cifras, KPIs, porcentajes o datos duros mencionados.
+    4. "Decisiones y Acuerdos" (lista): Cada decisión tomada, por quién y en qué términos.
+    5. "Plan de Acción" (lista): Formato "Tarea | Responsable | Fecha" (si se menciona).`,
+
+    libre: `${base}
+    
+    MODO REGISTRO LIBRE / BITÁCORA EXTENDIDA:
+    Debes generar las siguientes secciones (en este orden):
+    1. "Contexto y Hilo Conductor" (parrafos): De qué trata la sesión, cuál es el arco narrativo.
+    2. "Desarrollo Completo de Ideas" (lista): Cada idea expuesta, con el mayor detalle posible.
+    3. "Hallazgos y Conexiones" (lista): Relaciones inesperadas, insights, conexiones entre temas.`,
+
+    idiomas: `${base}
+    
+    MODO IDIOMAS / INMERSIÓN LINGÜÍSTICA:
+    Debes generar las siguientes secciones (en este orden):
+    1. "Enfoque Lingüístico" (parrafos): Tema gramatical o comunicativo principal de la clase.
+    2. "Glosario Detallado" (lista): Formato "Término | Significado | Ejemplo de uso".
+    3. "Estructuras Gramaticales" (bloque): Con ejemplos de patrones sintácticos.
+    4. "Notas de Pronunciación" (lista): Palabras o sonidos con descripción fonética.
+    5. "Contexto y Uso" (parrafos): Situaciones comunicativas trabajadas.
+    6. "Ejercicios de Clase" (lista): Actividades propuestas por el profesor.
+    7. "Reto de Práctica Activa" (parrafos): Un desafío concreto para que el estudiante practique fuera de clase.`
+  };
+
+  return prompts[mode] || prompts.academico;
 }
 
-function getTemplateContext() {
-  const sel = memoriaTemporal.obtener(LS_KEY_TEMPLATE) || 'auto';
-  if (sel === 'trabajo') return "Contexto: Reunión laboral. Captura todos los detalles exhaustivos y extrae todas las acciones pendientes (tareas).";
-  if (sel === 'clase') return "Contexto: Clase universitaria. Extrae explicaciones teóricas, conceptos y si hay tareas o lecturas asígnalas a acciones pendientes.";
-  if (sel === 'custom') return "Instrucciones personalizadas: " + (memoriaTemporal.obtener(LS_KEY_TEMPLATE_CUSTOM) || "Analiza el texto y extrae detalles y tareas.");
-  return "Extrae los temas con detalles y cualquier tarea o acción pendiente mencionada.";
-}
-
+// ═══════════════════ RESET ═══════════════════
 function resetSession() {
   accumulatedTranscript = '';
-  currentParsedData = null; 
+  currentParsedData = null;
   document.getElementById('transcript-box').innerHTML = '<span style="color:var(--muted)">La transcripción aparecerá aquí...</span>';
   document.getElementById('notes-container').innerHTML = '<div class="state-msg"><span class="big">✨</span><span>Sube tus audios primero y luego haz clic en "Generar Notas Inteligentes".</span></div>';
   document.getElementById('btn-analyze').style.display = 'none';
   document.getElementById('btn-clear').style.display = 'none';
+  document.getElementById('mode-selector').style.display = 'none';
   setStatus('idle', 'Listo. Sube o dicta un audio.');
 }
 
+// ═══════════════════ GRABACIÓN ═══════════════════
 function startRecording(btnMic, transcriptBox) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { showError('Navegador no soporta reconocimiento de voz.'); return; }
   shouldRestart = true; isRecording = true;
   btnMic.textContent = '⏹️ Detener'; btnMic.classList.add('recording');
-  setStatus('active', 'Escuchando micrófono…'); 
-  if (!accumulatedTranscript.trim()) transcriptBox.textContent = ''; 
+  setStatus('active', 'Escuchando micrófono…');
+  if (!accumulatedTranscript.trim()) transcriptBox.textContent = '';
   _startSession(SR, transcriptBox);
 }
 
@@ -759,9 +804,9 @@ function _startSession(SR, transcriptBox) {
     sessionInterim = '';
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const t = event.results[i][0].transcript;
-      if (event.results[i].isFinal) { 
-        accumulatedTranscript += (accumulatedTranscript && !accumulatedTranscript.endsWith('\n') ? ' ' : '') + t + ' '; 
-        sessionInterim = ''; 
+      if (event.results[i].isFinal) {
+        accumulatedTranscript += (accumulatedTranscript && !accumulatedTranscript.endsWith('\n') ? ' ' : '') + t + ' ';
+        sessionInterim = '';
       } else { sessionInterim += t; }
     }
     transcriptBox.textContent = accumulatedTranscript + sessionInterim;
@@ -774,30 +819,29 @@ function _startSession(SR, transcriptBox) {
 function stopRecording(btnMic) {
   shouldRestart = false; isRecording = false;
   if (recognition) { recognition.onend = null; recognition.onerror = null; try { recognition.stop(); } catch(e){} recognition = null; }
-  btnMic.textContent = '🎙️ Dictar'; btnMic.classList.remove('recording'); 
+  btnMic.textContent = '🎙️ Dictar'; btnMic.classList.remove('recording');
   setStatus('idle', 'Pausado. Puedes generar notas.');
   if (accumulatedTranscript.trim()) {
     document.getElementById('transcript-box').textContent = accumulatedTranscript;
     document.getElementById('btn-analyze').style.display = 'flex';
     document.getElementById('btn-clear').style.display = 'block';
+    document.getElementById('mode-selector').style.display = 'block';
   }
 }
 
+// ═══════════════════ TRANSCRIPCIÓN ARCHIVOS ═══════════════════
 async function handleMultipleAudioFiles(files, transcriptBox, btnMic, btnUpload, btnAnalyze) {
-  shouldRestart = false; isRecording = false; 
+  shouldRestart = false; isRecording = false;
   if (recognition) { recognition.onend = null; try { recognition.stop(); } catch(e){} recognition = null; }
   resetMicButton(btnMic);
   disableButtons(btnMic, btnUpload, btnAnalyze);
-  
-  const groqKey = (memoriaTemporal.obtener(LS_KEY_GROQ) || '').trim();
-  if (!groqKey) { enableButtons(btnMic, btnUpload); setStatus('error', 'Falta API Groq'); showError('Introduce tu Groq API Key.'); return; }
 
   if (!accumulatedTranscript.trim()) transcriptBox.textContent = '';
-  
+
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     setStatus('loading', `Transcribiendo Audio ${i + 1} de ${files.length}…`);
-    
+
     const tempIndicator = document.createElement('div');
     tempIndicator.style.color = 'var(--gold)';
     tempIndicator.style.margin = '10px 0';
@@ -805,7 +849,7 @@ async function handleMultipleAudioFiles(files, transcriptBox, btnMic, btnUpload,
     transcriptBox.appendChild(tempIndicator);
 
     try {
-      const transcript = await transcribeWithGroq(file, groqKey);
+      const transcript = await transcribeWithGroq(file);
       if (transcript && transcript.trim()) {
         if (accumulatedTranscript.trim()) accumulatedTranscript += '\n\n';
         accumulatedTranscript += transcript.trim();
@@ -815,7 +859,7 @@ async function handleMultipleAudioFiles(files, transcriptBox, btnMic, btnUpload,
     } catch (err) {
       showToast(`❌ Fallo en audio "${file.name}": ${err.message}`);
     } finally {
-      tempIndicator.remove(); 
+      tempIndicator.remove();
     }
 
     if (i < files.length - 1) {
@@ -823,89 +867,87 @@ async function handleMultipleAudioFiles(files, transcriptBox, btnMic, btnUpload,
       await new Promise(r => setTimeout(r, 10000));
     }
   }
-  
+
   btnAnalyze.style.display = 'flex';
   document.getElementById('btn-clear').style.display = 'block';
+  document.getElementById('mode-selector').style.display = 'block';
   setStatus('idle', 'Todos los audios procesados. Genera las notas.');
   enableButtons(btnMic, btnUpload, btnAnalyze);
 }
 
-async function transcribeWithGroq(file, apiKey) {
+async function transcribeWithGroq(file) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('model', GROQ_AUDIO_MODEL);
   formData.append('response_format', 'json');
   formData.append('language', 'es');
 
-  let response = await fetch(GROQ_AUDIO_URL, { method: 'POST', headers: { 'Authorization': `Bearer ${apiKey}` }, body: formData });
+  let response = await fetch(GROQ_AUDIO_URL, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${GROQ_API_KEY}` },
+    body: formData
+  });
   let data = await response.json();
   if (!response.ok) throw new Error(data?.error?.message || `HTTP ${response.status} al transcribir`);
   return data.text || '';
 }
 
-async function analyzeText(text, notesContainer) {
-  const groqKey = (memoriaTemporal.obtener(LS_KEY_GROQ) || '').trim();
-  if (!groqKey) return;
-
+// ═══════════════════ ANÁLISIS ═══════════════════
+async function analyzeText(text, notesContainer, mode) {
   const btnAnalyze = document.getElementById('btn-analyze');
   disableButtons(document.getElementById('btn-mic'), document.getElementById('btn-upload'), btnAnalyze);
 
-  const contextInstruction = getTemplateContext();
   const currentModel = memoriaTemporal.obtener(LS_KEY_MODEL) || 'llama-3.3-70b-versatile';
-  
-  const CHUNK_SIZE = 8000; 
+  const CHUNK_SIZE = 8000;
   const chunks = [];
   for (let i = 0; i < text.length; i += CHUNK_SIZE) chunks.push(text.slice(i, i + CHUNK_SIZE));
 
-  let finalData = { titulo_principal: "", temas: [], acciones_pendientes: [] };
-  
+  let finalData = { titulo_principal: "", secciones: [] };
+
   try {
     for (let i = 0; i < chunks.length; i++) {
       setStatus('loading', `Analizando... Parte ${i + 1} de ${chunks.length}`);
-      
+
+      const systemPrompt = getSystemPromptForMode(mode);
+
       const payload = {
         model: currentModel,
         messages: [
           {
             role: "system",
-            content: `Actúas como un asistente experto en tomar apuntes estructurados a partir de transcripciones de audio (clases universitarias o reuniones de trabajo).\n\n${contextInstruction}\n\nReglas:\n- No inventes información que no esté en el texto. Si algo no se menciona, no lo incluyas.\n- Agrupa el contenido por temas o bloques temáticos reales (no por minuto de audio).\n- "resumen_rapido": 1-2 frases que permitan entender el tema sin leer el detalle.\n- "apuntes_detallados": lista de puntos concretos, con datos, cifras, nombres o conceptos clave mencionados literalmente en el audio.\n- "acciones_pendientes": solo tareas, entregas o compromisos explícitamente mencionados (quién, qué, cuándo si se dice).\n- Si esta es una parte intermedia de una transcripción larga, no repitas temas ya cubiertos si el texto continúa el mismo tema.\n\nDevuelve exclusivamente este JSON, sin markdown ni texto adicional:\n{\n  "titulo_principal": "Título de la sesión",\n  "temas": [\n    {\n      "titulo": "Nombre del Tema",\n      "resumen_rapido": "Resumen conciso del tema",\n      "apuntes_detallados": ["Punto clave 1", "Punto clave 2"]\n    }\n  ],\n  "acciones_pendientes": ["Tarea o acción identificada 1"]\n}`
+            content: systemPrompt + (chunks.length > 1 ? `\n\nEsta es la PARTE ${i + 1} de ${chunks.length} de una transcripción larga. Analiza solo el contenido de esta parte sin repetir temas ya cubiertos en partes anteriores, a menos que se añada información nueva.` : '')
           },
           { role: "user", content: `PARTE ${i + 1}/${chunks.length}:\n${chunks[i]}` }
         ],
         temperature: 0.1,
-        response_format: { type: "json_object" } 
+        response_format: { type: "json_object" }
       };
 
       let parsed;
       try {
-        const result = await callGroqChat(payload, groqKey);
+        const result = await callGroqChat(payload);
         parsed = parseJSONResponse(result);
       } catch (chunkErr) {
-        console.warn("Groq falló, intentando respaldo NVIDIA...", chunkErr);
-        const nvidiaKey = (memoriaTemporal.obtener(LS_KEY_NVIDIA) || '').trim();
-        if (!nvidiaKey) throw new Error("Groq falló y no hay clave NVIDIA configurada.");
-        
-        setStatus('loading', `Groq falló. Usando respaldo NVIDIA...`);
-        const result = await callNvidiaChat(payload, nvidiaKey);
-        parsed = parseJSONResponse(result);
+        throw new Error(`Error en análisis parte ${i+1}: ${chunkErr.message}`);
       }
-      
+
       if (parsed.titulo_principal && !finalData.titulo_principal) finalData.titulo_principal = parsed.titulo_principal;
-      if (Array.isArray(parsed.temas)) finalData.temas = finalData.temas.concat(parsed.temas);
-      if (Array.isArray(parsed.acciones_pendientes)) finalData.acciones_pendientes = finalData.acciones_pendientes.concat(parsed.acciones_pendientes);
+      if (Array.isArray(parsed.secciones)) {
+        finalData.secciones = mergeSecciones(finalData.secciones, parsed.secciones);
+      }
 
       if (i < chunks.length - 1) {
         setStatus('loading', `Pausa (20s) protegiendo API...`);
         await new Promise(r => setTimeout(r, 20000));
       }
     }
-    
-    currentParsedData = finalData; 
-    renderNotes(finalData, notesContainer);
+
+    currentParsedData = finalData;
+    renderNotes(finalData, notesContainer, mode);
     setStatus('active', 'Análisis completo');
     showToast('✅ Notas detalladas generadas');
     document.querySelector('[data-tab="notas"]')?.click();
-    
+
   } catch (err) {
     showError(`Error al estructurar notas: ${err.message}`);
     setStatus('error', 'Error en apuntes');
@@ -914,10 +956,25 @@ async function analyzeText(text, notesContainer) {
   }
 }
 
-async function callGroqChat(payload, apiKey) {
+function mergeSecciones(existing, incoming) {
+  const merged = [...existing];
+  for (const sec of incoming) {
+    const existingSec = merged.find(s => s.titulo_seccion === sec.titulo_seccion);
+    if (existingSec) {
+      if (Array.isArray(sec.contenido)) {
+        existingSec.contenido = [...existingSec.contenido, ...sec.contenido];
+      }
+    } else {
+      merged.push(sec);
+    }
+  }
+  return merged;
+}
+
+async function callGroqChat(payload) {
   let response = await fetch(GROQ_CHAT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
     body: JSON.stringify(payload)
   });
   let data = await response.json();
@@ -925,93 +982,87 @@ async function callGroqChat(payload, apiKey) {
   return data?.choices?.[0]?.message?.content || '{}';
 }
 
-async function callNvidiaChat(payload, apiKey) {
-  const nvidiaPayload = {
-    model: "meta/llama-3.1-70b-instruct",
-    messages: payload.messages,
-    temperature: 0.1,
-    max_tokens: 4096
-  };
-  let response = await fetch(NVIDIA_CHAT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-    body: JSON.stringify(nvidiaPayload)
-  });
-  let data = await response.json();
-  if (!response.ok) throw new Error(data?.error?.message || `Error NVIDIA HTTP ${response.status}`);
-  return data?.choices?.[0]?.message?.content || '{}';
-}
-
 function parseJSONResponse(raw) {
   let clean = raw.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
-  try { 
-    return JSON.parse(clean); 
-  } catch (e) { 
-    return { titulo_principal: "Error de Formato", temas: [{ titulo: "Raw", resumen_rapido: "Error", apuntes_detallados: [clean] }], acciones_pendientes: [] }; 
+  try {
+    const parsed = JSON.parse(clean);
+    if (!parsed.titulo_principal) parsed.titulo_principal = '';
+    if (!Array.isArray(parsed.secciones)) parsed.secciones = [];
+    return parsed;
+  } catch (e) {
+    return {
+      titulo_principal: "Error de Formato",
+      secciones: [{
+        titulo_seccion: "Respuesta cruda",
+        tipo_contenido: "bloque",
+        contenido: [clean]
+      }]
+    };
   }
 }
 
-function renderNotes(data, container) {
-  const temas = Array.isArray(data.temas) ? data.temas : [];
-  const acciones = Array.isArray(data.acciones_pendientes) ? data.acciones_pendientes : [];
+// ═══════════════════ RENDERIZADO DINÁMICO ═══════════════════
+function renderNotes(data, container, currentModeUsed) {
+  const secciones = Array.isArray(data.secciones) ? data.secciones : [];
 
-  const temasHtml = temas.length ? temas.map(t => {
-    const titulo = t.titulo || 'Tema';
-    const resumen = t.resumen_rapido || '';
-    const detalles = Array.isArray(t.apuntes_detallados) ? t.apuntes_detallados : [];
-    
-    return `<div class="tema-block">
-              <h4>${escHtml(titulo)}</h4>
-              ${resumen ? `<p class="resumen">${escHtml(resumen)}</p>` : ''}
-              ${detalles.length ? `
-                <details>
-                  <summary>Ver apuntes detallados</summary>
-                  <ul class="tema-puntos">${detalles.map(p => `<li>${escHtml(p)}</li>`).join('')}</ul>
-                </details>
-              ` : ''}
+  const seccionesHtml = secciones.length ? secciones.map(sec => {
+    const titulo = escHtml(sec.titulo_seccion || 'Sección');
+    const tipo = sec.tipo_contenido || 'parrafos';
+    const contenido = Array.isArray(sec.contenido) ? sec.contenido : [String(sec.contenido || '')];
+
+    let cuerpoHtml = '';
+    if (tipo === 'lista') {
+      cuerpoHtml = `<ul class="section-list">${contenido.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>`;
+    } else if (tipo === 'bloque') {
+      cuerpoHtml = `<div class="section-block">${contenido.map(item => escHtml(item)).join('\n')}</div>`;
+    } else {
+      cuerpoHtml = `<div class="section-paragraphs">${contenido.map(item => `<p>${escHtml(item)}</p>`).join('')}</div>`;
+    }
+
+    return `<div class="note-section">
+              <h3>${titulo}</h3>
+              ${cuerpoHtml}
             </div>`;
-  }).join('') : '<span style="color:var(--muted)">Ningún tema identificado.</span>';
-
-  const accionesHtml = acciones.length ? `
-    <div class="tareas-container">
-      <h3>✅ Tareas y Acciones Pendientes</h3>
-      <div>
-        ${acciones.map(a => `
-          <label class="tarea-item">
-            <input type="checkbox">
-            <span>${escHtml(a)}</span>
-          </label>
-        `).join('')}
-      </div>
-    </div>
-  ` : '';
+  }).join('') : '<span style="color:var(--muted)">Ninguna sección identificada.</span>';
 
   const projects = getProjects();
   const projectOptionsHtml = projects.length
     ? projects.map(p => `<option value="${escHtml(p.id)}">${escHtml(p.nombre)}</option>`).join('')
     : `<option value="">Sin proyectos aún</option>`;
 
+  const modeOptions = [
+    { value: 'academico', label: '🎓 Académico' },
+    { value: 'ejecutivo', label: '💼 Ejecutivo' },
+    { value: 'libre', label: '📝 Registro Libre' },
+    { value: 'idiomas', label: '🌐 Idiomas' }
+  ];
+  const modeOptionsHtml = modeOptions.map(m =>
+    `<option value="${m.value}" ${m.value === currentModeUsed ? 'selected' : ''}>${m.label}</option>`
+  ).join('');
+
   container.innerHTML = `
     <div class="notes-header">
       <div class="notes-header-left">
         <select id="save-project-select" class="select-inline">${projectOptionsHtml}</select>
         <button id="btn-save-to-project" class="btn-copy-notion">💾 Guardar en Proyecto</button>
+        <select id="post-mode-select" class="select-inline" title="Cambiar estructura y re‑analizar">
+          ${modeOptionsHtml}
+        </select>
       </div>
       <button id="btn-copy-notion" class="btn-copy-notion">📋 Copiar Apuntes Limpios</button>
     </div>
     
     <div class="note-section" style="text-align: center; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
-      <h2 style="color: #fff; margin-bottom: 8px;">${escHtml(data.titulo_principal || 'Apuntes de la Sesión')}</h2>
+      <h2 style="color: var(--text); margin-bottom: 8px;">${escHtml(data.titulo_principal || 'Apuntes de la Sesión')}</h2>
     </div>
 
-    <div class="note-section" style="margin-top: 20px;">
-      <div class="note-content">${temasHtml}</div>
-    </div>
-    
-    ${accionesHtml}
+    ${seccionesHtml}
   `;
+
+  // Copiar apuntes limpios
   document.getElementById('btn-copy-notion').addEventListener('click', exportToCleanText);
 
+  // Guardar en proyecto
   const btnSaveToProject = document.getElementById('btn-save-to-project');
   if (btnSaveToProject) {
     btnSaveToProject.addEventListener('click', () => {
@@ -1021,34 +1072,50 @@ function renderNotes(data, container) {
       saveNoteToProject(projectId);
     });
   }
+
+  // Selector post‑generación: re‑analizar con nuevo modo
+  const postModeSelect = document.getElementById('post-mode-select');
+  if (postModeSelect) {
+    postModeSelect.addEventListener('change', () => {
+      const newMode = postModeSelect.value;
+      if (newMode === currentModeUsed) return;
+      if (!accumulatedTranscript.trim()) {
+        showToast('⚠️ No hay transcripción para re‑analizar.');
+        postModeSelect.value = currentModeUsed;
+        return;
+      }
+      // Actualizar también los chips pre‑generación
+      const radioPre = document.querySelector(`input[name="mode"][value="${newMode}"]`);
+      if (radioPre) radioPre.checked = true;
+      currentMode = newMode;
+      memoriaTemporal.guardar(LS_KEY_MODE, newMode);
+      showToast('🔄 Re‑analizando con nuevo modo...');
+      analyzeText(accumulatedTranscript.trim(), container, newMode);
+    });
+  }
 }
 
 function exportToCleanText() {
   if (!currentParsedData) return;
   const data = currentParsedData;
-  
+
   let cleanText = `========================================\n`;
   cleanText += `  ${(data.titulo_principal || 'APUNTES DE LA SESIÓN').toUpperCase()}\n`;
   cleanText += `========================================\n\n`;
 
-  if (Array.isArray(data.temas) && data.temas.length) {
-    cleanText += `TEMAS Y DETALLES:\n`;
-    cleanText += `----------------------------------------\n`;
-    data.temas.forEach(t => {
-      cleanText += `• ${t.titulo || 'Tema'}:\n`;
-      if (t.resumen_rapido) cleanText += `  [Resumen] ${t.resumen_rapido}\n`;
-      if (Array.isArray(t.apuntes_detallados)) {
-        t.apuntes_detallados.forEach(d => cleanText += `  - ${d}\n`);
+  if (Array.isArray(data.secciones) && data.secciones.length) {
+    data.secciones.forEach(sec => {
+      cleanText += `── ${(sec.titulo_seccion || '').toUpperCase()} ──\n`;
+      const contenido = Array.isArray(sec.contenido) ? sec.contenido : [String(sec.contenido || '')];
+      if (sec.tipo_contenido === 'lista') {
+        contenido.forEach(item => { cleanText += `  • ${item}\n`; });
+      } else if (sec.tipo_contenido === 'bloque') {
+        cleanText += `  ${contenido.join('\n  ')}\n`;
+      } else {
+        contenido.forEach(item => { cleanText += `${item}\n\n`; });
       }
       cleanText += `\n`;
     });
-  }
-
-  if (Array.isArray(data.acciones_pendientes) && data.acciones_pendientes.length) {
-    cleanText += `ACCIONES PENDIENTES:\n`;
-    cleanText += `----------------------------------------\n`;
-    data.acciones_pendientes.forEach(a => cleanText += `[ ] ${a}\n`);
-    cleanText += `\n`;
   }
 
   navigator.clipboard.writeText(cleanText.trim())
@@ -1098,7 +1165,8 @@ function saveNoteToProject(projectId) {
   project.notas.push({
     id: 'nota_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     fecha: new Date().toISOString(),
-    data: currentParsedData
+    data: currentParsedData,
+    mode: currentMode
   });
   saveProjects(projects);
   showToast(`✅ Nota guardada en "${project.nombre}"`);
@@ -1174,18 +1242,22 @@ function renderProjectDetail(projectId, container) {
   const notasHtml = notas.length
     ? notas.map(n => {
         const d = n.data || {};
-        const temas = Array.isArray(d.temas) ? d.temas : [];
-        const acciones = Array.isArray(d.acciones_pendientes) ? d.acciones_pendientes : [];
-        const detalleHtml = `
-          ${temas.map(t => `
-            <div class="tema-block">
-              <h4>${escHtml(t.titulo || 'Tema')}</h4>
-              ${t.resumen_rapido ? `<p class="resumen">${escHtml(t.resumen_rapido)}</p>` : ''}
-              ${Array.isArray(t.apuntes_detallados) && t.apuntes_detallados.length ? `<ul class="tema-puntos">${t.apuntes_detallados.map(p => `<li>${escHtml(p)}</li>`).join('')}</ul>` : ''}
-            </div>
-          `).join('')}
-          ${acciones.length ? `<div style="margin-top:10px;"><strong style="font-size:0.8rem;color:var(--success);">Acciones:</strong><ul class="tema-puntos">${acciones.map(a => `<li>${escHtml(a)}</li>`).join('')}</ul></div>` : ''}
-        `;
+        const secciones = Array.isArray(d.secciones) ? d.secciones : [];
+        const detalleHtml = secciones.map(sec => {
+          const titulo = escHtml(sec.titulo_seccion || 'Sección');
+          const tipo = sec.tipo_contenido || 'parrafos';
+          const contenido = Array.isArray(sec.contenido) ? sec.contenido : [String(sec.contenido || '')];
+          let cuerpo = '';
+          if (tipo === 'lista') {
+            cuerpo = `<ul class="section-list">${contenido.map(item => `<li>${escHtml(item)}</li>`).join('')}</ul>`;
+          } else if (tipo === 'bloque') {
+            cuerpo = `<div class="section-block">${contenido.map(item => escHtml(item)).join('\n')}</div>`;
+          } else {
+            cuerpo = `<div class="section-paragraphs">${contenido.map(item => `<p>${escHtml(item)}</p>`).join('')}</div>`;
+          }
+          return `<div style="margin-bottom:12px;"><strong style="color:var(--accent); font-size:0.8rem; text-transform:uppercase;">${titulo}</strong>${cuerpo}</div>`;
+        }).join('');
+
         return `
           <details class="nota-guardada">
             <summary>
@@ -1231,9 +1303,6 @@ function renderProjectDetail(projectId, container) {
 }
 
 async function generateGlobalSummary(project) {
-  const groqKey = (memoriaTemporal.obtener(LS_KEY_GROQ) || '').trim();
-  if (!groqKey) { showToast('⚠️ Configura tu Groq API Key primero.'); return; }
-
   const notas = Array.isArray(project.notas) ? project.notas : [];
   if (!notas.length) { showToast('⚠️ No hay notas para resumir.'); return; }
 
@@ -1241,15 +1310,12 @@ async function generateGlobalSummary(project) {
     const d = n.data || {};
     let block = `--- APUNTES DEL ${formatFecha(n.fecha)} ---\n`;
     block += `Título: ${d.titulo_principal || 'Sin título'}\n`;
-    if (Array.isArray(d.temas)) {
-      d.temas.forEach(t => {
-        block += `Tema: ${t.titulo || ''}\n`;
-        if (t.resumen_rapido) block += `Resumen: ${t.resumen_rapido}\n`;
-        if (Array.isArray(t.apuntes_detallados)) block += t.apuntes_detallados.map(p => `- ${p}`).join('\n') + '\n';
+    if (Array.isArray(d.secciones)) {
+      d.secciones.forEach(sec => {
+        block += `Sección: ${sec.titulo_seccion || ''}\n`;
+        const contenido = Array.isArray(sec.contenido) ? sec.contenido : [String(sec.contenido || '')];
+        contenido.forEach(item => { block += `- ${item}\n`; });
       });
-    }
-    if (Array.isArray(d.acciones_pendientes) && d.acciones_pendientes.length) {
-      block += `Acciones: ${d.acciones_pendientes.join('; ')}\n`;
     }
     return block;
   }).join('\n\n');
@@ -1275,14 +1341,7 @@ async function generateGlobalSummary(project) {
         temperature: 0.2
       };
 
-      let resultText;
-      try {
-        resultText = await callGroqChat(payload, groqKey);
-      } catch (chunkErr) {
-        const nvidiaKey = (memoriaTemporal.obtener(LS_KEY_NVIDIA) || '').trim();
-        if (!nvidiaKey) throw new Error("Groq falló y no hay clave NVIDIA configurada.");
-        resultText = await callNvidiaChat(payload, nvidiaKey);
-      }
+      let resultText = await callGroqChat(payload);
       combinedSummary += (combinedSummary ? '\n\n' : '') + resultText.trim();
 
       if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 5000));
@@ -1298,15 +1357,7 @@ async function generateGlobalSummary(project) {
         ],
         temperature: 0.2
       };
-      let finalText;
-      try {
-        finalText = await callGroqChat(finalPayload, groqKey);
-      } catch (e) {
-        const nvidiaKey = (memoriaTemporal.obtener(LS_KEY_NVIDIA) || '').trim();
-        if (!nvidiaKey) throw e;
-        finalText = await callNvidiaChat(finalPayload, nvidiaKey);
-      }
-      combinedSummary = finalText.trim();
+      combinedSummary = (await callGroqChat(finalPayload)).trim();
     }
 
     updateModalContent(combinedSummary || 'No se pudo generar contenido.');
@@ -1330,12 +1381,6 @@ function closeModal() {
 }
 
 /* ══════════════════ Utilidades ══════════════════ */
-
-function updateGroqKeyStatus(key, el) {
-  if (key.startsWith('gsk_') && key.length > 20) { el.textContent = '✅ API Key configurada correctamente.'; el.style.color = 'var(--success)'; } 
-  else if (key.length > 0) { el.textContent = '⚠️ Clave sospechosa (debe iniciar con gsk_).'; el.style.color = 'var(--gold)'; } 
-  else { el.textContent = 'Sin clave. Consíguela en console.groq.com'; el.style.color = 'var(--muted)'; }
-}
 
 function setStatus(type, text) {
   const dot = document.getElementById('status-dot');
